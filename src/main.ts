@@ -9,37 +9,35 @@ let input: string = ''
 let progress: UserTry[] = []
 
 const handleKeyboard = (event: KeyboardEvent) => {
-  const [, ...restOfTheWord] = wordToFind
-  const { key: pressedLetter, isTrusted } = event
+  const [_firstLetter, ...wordToFindMinusFirstLetter] = wordToFind
+  const { key: pressedKey, isTrusted } = event
 
   if (!isTrusted) return
 
-  if (pressedLetter === 'Backspace') {
-    input = input.slice(0, -1)
+  if (pressedKey === 'Backspace') return (input = input.slice(0, -1))
 
-    return updatePage()
-  }
+  if (wordToFindMinusFirstLetter.length === input.length) {
+    if (pressedKey !== 'Enter') return
 
-  if (restOfTheWord.length === input.length) {
-    if (pressedLetter !== 'Enter') return
-
-    const userTry = getUserTry(input.toLowerCase(), restOfTheWord.join(''))
+    const userTry = getUserTry(input, wordToFindMinusFirstLetter)
 
     progress = [...progress, userTry]
 
     input = ''
-
-    return updatePage()
   }
 
-  if (!pressedLetter.match(/^[a-z]$/i)) return
+  if (!pressedKey.match(/^[a-z]$/i)) return
 
-  input += pressedLetter
+  input += pressedKey.toLowerCase()
+}
+
+const handleInteraction = (event: KeyboardEvent) => {
+  handleKeyboard(event)
 
   updatePage()
 }
 
-const getUserTry = (input: string, wordToFind: string) => {
+const getUserTry = (input: string, wordToFind: string[]) => {
   const compareState = [...input].map((letter, key) => {
     if (letter === wordToFind[key]) return 'good'
 
@@ -50,22 +48,34 @@ const getUserTry = (input: string, wordToFind: string) => {
   return { input: input, state: compareState }
 }
 
+const getLetterHolder = (letter: string, state?: string) => `<span class="${state}">${letter ?? '_'}</span>`
+
 const getInputRow = (wordToFind: string, input: string, letterStateList: LetterState[]) => {
   const [firstLetter, ...restOfTheWord] = wordToFind
 
-  const content = restOfTheWord
-    .map((_letter, index) => `<span id="${letterStateList[index]}">${[...input][index] ?? '_'}</span>`)
-    .join('')
+  const firstLetterHolder = getLetterHolder(firstLetter, 'good')
 
-  return `<div><span id="good">${firstLetter}</span> ${content}</div>`
+  const restOfLettersHolders = restOfTheWord.reduce(
+    (content, _letter, index) => content + getLetterHolder([...input][index], letterStateList[index]),
+    ''
+  )
+
+  return `<div>${firstLetterHolder}${restOfLettersHolders}</div>`
 }
 
-const updatePage = () =>
-  (document.querySelector<HTMLDivElement>('#app')!.innerHTML =
-    `<h1>TUSMO + VANILLA</h1>` +
-    progress.map(userTry => getInputRow(wordToFind, userTry.input, userTry.state)).join('') +
-    getInputRow(wordToFind, input, []))
+const updatePage = () => {
+  const title = `<h1>TUSMO + VANILLA</h1>`
 
-document.addEventListener('keydown', event => handleKeyboard(event))
+  const currentInputRow = getInputRow(wordToFind, input, [])
+
+  const previousInputsRows = progress.reduce(
+    (content, userTry) => content + getInputRow(wordToFind, userTry.input, userTry.state),
+    ''
+  )
+
+  document.querySelector<HTMLDivElement>('#app')!.innerHTML = title + previousInputsRows + currentInputRow
+}
+
+document.addEventListener('keydown', handleInteraction)
 
 updatePage()
