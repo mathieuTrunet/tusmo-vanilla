@@ -23,12 +23,10 @@ const handleKeyboard = (event: KeyboardEvent) => {
 
     progress = [...progress, userTry]
 
-    input = ''
+    return input = ''
   }
 
-  if (!pressedKey.match(/^[a-z]$/i)) return
-
-  input += pressedKey.toLowerCase()
+  if (pressedKey.match(/^[a-z]$/i)) return   input += pressedKey.toLowerCase()
 }
 
 const handleInteraction = (event: KeyboardEvent) => {
